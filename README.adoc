@@ -1,26 +1,30 @@
-ifndef::env-github[:icons: font]
-ifdef::env-github[]
-:status:
-:outfilesuffix: .adoc
-:caution-caption: :fire:
-:important-caption: :exclamation:
-:note-caption: :page_with_curl:
-:tip-caption: :bulb:
-:warning-caption: :warning:
-endif::[]
-# SampleBPjsProject
+Demonstrates the BPjs random stability issue.
 
-A sample maven project using BPjs. Clone or fork this project to easily start your own prject using BPjs. This project has two files:
+The problem can be seen by comparing `run_{1,2}.log` - they were both run with seed 1, but they differ.
 
-* link:src/main/resources/HelloBPjsWorld.js[BPjs "hello world" program].
-* link:src/main/java/il/ac/bgu/cs/bp/samplebpjsproject/HelloWorld.java[Simple "main" class for running `HelloBPjsWorld.js` and emitting its events to stdout].
+In order to debug, few prints were added to BPjs' AbstractEventSelectionStrategy.java:
 
-
-Run the application by typing:
-
-    mvn exec:java
-
-## Please keep these:
-* This project uses https://github.com/bThink-BGU/BPjs[BPjs].
-* BPjs uses the Mozilla Rhino Javascript engine. See https://developer.mozilla.org/en-US/docs/Mozilla/Projects/Rhino[project page and source code].
+    --- a/src/main/java/il/ac/bgu/cs/bp/bpjs/model/eventselection/AbstractEventSelectionStrategy.java
+    +++ b/src/main/java/il/ac/bgu/cs/bp/bpjs/model/eventselection/AbstractEventSelectionStrategy.java
+    @@ -75,12 +75,18 @@ public abstract class AbstractEventSelectionStrategy implements EventSelectionSt
+             if (selectableEvents.isEmpty()) {
+                 return Optional.empty();
+             }
+    -        BEvent chosen = new ArrayList<>(selectableEvents).get(rnd.nextInt(selectableEvents.size()));
+    +        var randInt = rnd.nextInt(selectableEvents.size());
+    +        System.out.println("ZZ selectableEvents: " + selectableEvents);
+    +        System.out.println("ZZ size:" + selectableEvents.size() + ", randInt: " + randInt);
+    +        BEvent chosen = new ArrayList<>(selectableEvents).get(randInt);
+             Set<BEvent> requested = bpss.getStatements().stream()
+                                               .filter((SyncStatement stmt) -> stmt != null)
+                                               .flatMap((SyncStatement stmt) -> stmt.getRequest().stream())
+                                               .collect(Collectors.toSet());
+    -
+    +
+    +        System.out.println("ZZ requested: " + requested);
+    +        System.out.println("ZZ chosen: " + chosen);
+    +        System.out.println("ZZ contained: " + requested.contains(chosen));
+             if (requested.contains(chosen)) {
+                 return Optional.of(new EventSelectionResult(chosen));
+             } else {
 
